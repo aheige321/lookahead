@@ -25,7 +25,8 @@
 </head>
 <body class="bg-gray-50 flex flex-col font-sans text-gray-800 relative">
 
-    <header class="pt-3 pb-2 px-3 sm:px-4 flex justify-between items-center shrink-0 w-full max-w-2xl mx-auto">
+    <!-- 顶部标题与功能区 (去除最大宽度限制，宽度改用 JS 像素级精确控制) -->
+    <header id="game-header" class="pt-3 pb-2 px-3 sm:px-4 flex justify-between items-center shrink-0 mx-auto w-full">
         <div>
             <h1 class="text-xl sm:text-2xl font-black text-gray-800 tracking-tight">Lookahead</h1>
             <p class="text-[10px] sm:text-xs text-gray-500 font-bold tracking-wide">F2L 盲拧/速拧前瞻训练</p>
@@ -45,12 +46,13 @@
         </div>
     </header>
 
+    <!-- 控制面板 -->
     <div class="px-2 py-2 bg-white shadow-sm flex flex-col items-center justify-center gap-2 z-10 relative shrink-0">
-        <div class="grid grid-cols-3 rounded-md overflow-hidden border border-gray-300 w-[95%] max-w-sm">
+        <div class="grid grid-cols-3 rounded-md overflow-hidden border border-gray-300 w-[95%] max-w-md sm:max-w-lg">
             <button id="btn-edge" onclick="setMode('edge')" class="py-1.5 text-xs sm:text-sm font-bold bg-white text-gray-700 transition-colors border-r border-gray-300">棱块</button>
             <button id="btn-corner" onclick="setMode('corner')" class="py-1.5 text-xs sm:text-sm font-bold bg-white text-gray-700 transition-colors border-r border-gray-300">角块</button>
             <button id="btn-both" onclick="setMode('both')" class="py-1.5 text-xs sm:text-sm font-bold bg-white text-gray-700 transition-colors relative">
-                F2L 双块 <span class="absolute top-0 right-0 text-[8px] bg-red-500 text-white px-1 rounded-bl">高难</span>
+                双块 <span class="absolute top-0 right-0 text-[8px] bg-red-500 text-white px-1 rounded-bl">高难</span>
             </button>
         </div>
         <div class="flex items-center gap-1 flex-wrap justify-center max-w-full px-2 mt-1">
@@ -59,13 +61,14 @@
         </div>
     </div>
 
+    <!-- 主体 3D 区域 -->
     <main class="flex-1 flex flex-col items-center justify-start p-2 relative overflow-hidden">
         <p id="instruction-text" class="absolute top-2 z-10 text-sky-600 text-sm font-bold bg-white/95 px-4 py-1.5 rounded-full shadow-md animate-pulse pointer-events-none transition-colors duration-300">
             👆 滑动寻找发光目标，推演其最终位置
         </p>
 
-        <!-- 画布容器 -->
-        <div class="relative w-full max-w-sm sm:max-w-md aspect-square bg-gray-100 rounded-xl shadow-inner border border-gray-200 mt-2 sm:mt-4 overflow-hidden">
+        <!-- 自适应魔方容器 (尺寸完全交由 JS 动态计算) -->
+        <div id="cube-container" class="relative bg-gray-100 rounded-xl shadow-inner border border-gray-200 mt-2 overflow-hidden shrink-0 flex items-center justify-center mx-auto">
             <div id="canvas-container" class="w-full h-full cursor-pointer touch-none"></div>
             
             <!-- 悬浮结算卡片 -->
@@ -80,13 +83,14 @@
             </div>
         </div>
 
-        <div class="bg-white p-3 sm:p-4 rounded-xl shadow mt-3 w-full max-w-sm sm:max-w-md shrink-0 flex flex-col items-center overflow-y-auto max-h-[38vh]">
+        <!-- 底部公式区 & 交互式图例 (宽度由 JS 精确控制) -->
+        <div id="bottom-card" class="bg-white p-3 sm:p-4 rounded-xl shadow mt-3 shrink-0 flex flex-col items-center overflow-y-auto max-h-[38vh] mx-auto w-full">
             <h2 class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">推演公式 (TEST MOVES)</h2>
             <div id="moves-container" class="flex flex-wrap items-center justify-center gap-1.5 min-h-[40px]"></div>
             
             <div class="mt-4 pt-3 border-t border-gray-100 w-full">
                 <p class="text-[11px] sm:text-xs font-bold text-gray-500 mb-1.5 text-center flex items-center justify-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
                     看不懂公式？点击下方字母看动画演示
                 </p>
                 <p class="text-[9px] sm:text-[10px] text-gray-400 mb-3 text-center">
@@ -294,35 +298,92 @@
             document.getElementById('timer-display').innerText = finalTimeStr;
         }
 
-        function createCenterTexture(letter, bgColorCSS) {
+        function createCenterTexture(letter, bgColorCSS, rotationAngle = 0) {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
+            
             ctx.fillStyle = bgColorCSS;
             ctx.fillRect(0, 0, 128, 128);
+            
+            ctx.save();
+            ctx.translate(64, 64);
+            ctx.rotate(rotationAngle);
+            
             ctx.font = 'bold 75px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 6;
-            ctx.strokeText(letter, 64, 70);
+            ctx.strokeText(letter, 0, 6);
+            
             ctx.fillStyle = '#000000';
-            ctx.fillText(letter, 64, 70);
+            ctx.fillText(letter, 0, 6);
+            
+            ctx.restore();
+            
             const tex = new THREE.CanvasTexture(canvas);
             tex.anisotropy = 16;
             return tex;
         }
 
+        // ==========================================
+        // 【核心修复1】确保 adjustLayoutSize 被调用
+        // 并通过 size 同步锁定 header 和 bottom-card，实现极致对齐
+        // ==========================================
+        function adjustLayoutSize() {
+            const header = document.getElementById('game-header');
+            const controls = document.querySelector('.px-2.py-2.bg-white.shadow-sm');
+            const bottomCard = document.getElementById('bottom-card');
+            const cubeContainer = document.getElementById('cube-container');
+
+            if (!header || !controls || !bottomCard || !cubeContainer) return 300;
+
+            const vpHeight = window.innerHeight;
+            const vpWidth = window.innerWidth;
+
+            const headerHeight = header.offsetHeight;
+            const controlsHeight = controls.offsetHeight;
+            const bottomHeight = bottomCard.offsetHeight;
+
+            const verticalAllowance = 48; 
+
+            let maxH = vpHeight - headerHeight - controlsHeight - bottomHeight - verticalAllowance;
+            let maxW = vpWidth - 24; 
+
+            let size = Math.min(maxH, maxW);
+            if (size < 180) size = 180;
+
+            // 完美绑定三者宽度
+            cubeContainer.style.width = size + 'px';
+            cubeContainer.style.height = size + 'px';
+            header.style.width = size + 'px';
+            bottomCard.style.width = size + 'px';
+
+            if (camera && renderer) {
+                camera.aspect = 1; 
+                camera.updateProjectionMatrix();
+                renderer.setSize(size, size);
+            }
+            return size;
+        }
+
         function init() {
+            // 【核心修复2】初始化时立即强制布局计算，防止魔方不可见
+            const size = adjustLayoutSize();
+
             const container = document.getElementById('canvas-container');
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            
+            // 安全注入尺寸
+            renderer.setSize(size || container.clientWidth, size || container.clientHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setClearColor(0xf3f4f6, 1); 
             container.appendChild(renderer.domElement);
 
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(42, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
             camera.position.set(4.5, 3.8, 5.5);
 
             controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -389,6 +450,9 @@
             dom.addEventListener('pointerleave', () => { pointerDownPos = null; });
         }
 
+        // ==========================================
+        // 【核心修复3】恢复完美直立的字母朝向：侧面为 0，上面为 Math.PI
+        // ==========================================
         function createCube(targetPosArray) {
             cubies.forEach(c => {
                 scene.remove(c);
@@ -428,13 +492,14 @@
 
                         const materials = Array(6).fill(null).map(() => createMat(C_HEX.BLACK));
 
+                        // 完美的中心字母角度：侧面 0，上面 180°
                         if (isCenter) {
-                            if (x === 1) materials[0] = new THREE.MeshStandardMaterial({ map: createCenterTexture('R', C_CSS.R), roughness: 0.5 });
-                            if (x === -1) materials[1] = new THREE.MeshStandardMaterial({ map: createCenterTexture('L', C_CSS.L), roughness: 0.5 });
-                            if (y === 1) materials[2] = new THREE.MeshStandardMaterial({ map: createCenterTexture('U', C_CSS.U), roughness: 0.5 });
-                            if (y === -1) materials[3] = new THREE.MeshStandardMaterial({ map: createCenterTexture('D', C_CSS.D), roughness: 0.5 });
-                            if (z === 1) materials[4] = new THREE.MeshStandardMaterial({ map: createCenterTexture('F', C_CSS.F), roughness: 0.5 });
-                            if (z === -1) materials[5] = new THREE.MeshStandardMaterial({ map: createCenterTexture('B', C_CSS.B), roughness: 0.5 });
+                            if (x === 1) materials[0] = new THREE.MeshStandardMaterial({ map: createCenterTexture('R', C_CSS.R, 0), roughness: 0.5 });  
+                            if (x === -1) materials[1] = new THREE.MeshStandardMaterial({ map: createCenterTexture('L', C_CSS.L, 0), roughness: 0.5 }); 
+                            if (y === 1) materials[2] = new THREE.MeshStandardMaterial({ map: createCenterTexture('U', C_CSS.U, Math.PI), roughness: 0.5 });   
+                            if (y === -1) materials[3] = new THREE.MeshStandardMaterial({ map: createCenterTexture('D', C_CSS.D, 0), roughness: 0.5 });  
+                            if (z === 1) materials[4] = new THREE.MeshStandardMaterial({ map: createCenterTexture('F', C_CSS.F, 0), roughness: 0.5 });   
+                            if (z === -1) materials[5] = new THREE.MeshStandardMaterial({ map: createCenterTexture('B', C_CSS.B, 0), roughness: 0.5 });  
                         }
 
                         if (isTarget) {
@@ -469,7 +534,7 @@
         function applyInstantSequence(seq) {
             seq.forEach(moveStr => {
                 const moveDef = MOVES_DICT[moveStr];
-                const groupToMove = cubies.filter(c => Math.round(c.position[moveDef.axis]) === moveDef.layer);
+                const groupToMove = cubies.filter(c => Math.round(c.position[moveDef.axis]) === moveDef.layer && !c.userData.isCenter);
                 
                 pivot.rotation.set(0, 0, 0);
                 pivot.updateMatrixWorld();
@@ -583,16 +648,12 @@
 
         function retryGame() { setupPuzzleState(); }
 
-        // ==========================================
-        // 【核心修改2】增加静态高亮的清理
-        // ==========================================
         function setupPuzzleState() {
             gameState = 'PLAYING';
             guessedPositions = []; 
             hideResultCard();
             updateInstructionUI();
             
-            // 每次重新开始，强力清理之前的静态红蓝预测框
             removeStaticHighlight('guess-hl-0');
             removeStaticHighlight('guess-hl-1');
 
@@ -603,6 +664,9 @@
             camera.position.set(4.5, 3.8, 5.5);
             
             renderMoveBadges();
+
+            // 布局二次安全自适应
+            setTimeout(adjustLayoutSize, 50);
             
             if(document.getElementById('tutorial-overlay').classList.contains('hidden')) {
                 startTimer(); 
@@ -656,12 +720,8 @@
             }
         }
 
-        // ==========================================
-        // 【核心修改1】新增：静态世界空间高亮框函数
-        // 保证红框和蓝框死死钉在空间原处，绝不随层转走
-        // ==========================================
         function addStaticHighlight(pos, hexColor, name, scale = 1.05) {
-            removeStaticHighlight(name); // 清理旧的
+            removeStaticHighlight(name); 
             
             const geometry = new THREE.BoxGeometry(scale, scale, scale);
             const edges = new THREE.EdgesGeometry(geometry);
@@ -669,10 +729,7 @@
             const line = new THREE.LineSegments(edges, material);
             line.name = name;
             
-            // 关键：将位置直接拷贝给它，并贴合到整数网格上
             line.position.copy(pos).round();
-            
-            // 直接添加到 scene（世界空间）中，而不作为 cubie 的子元素！
             scene.add(line);
         }
 
@@ -685,21 +742,20 @@
             }
         }
 
-        // 修改点击响应，改用全新的 addStaticHighlight
         function handlePieceClick(clickedCubie) {
             const currentGuessIndex = guessedPositions.length;
             const clickPos = new THREE.Vector3().copy(clickedCubie.position).round();
             guessedPositions.push(clickPos);
 
             if (gameMode !== 'both') {
-                addStaticHighlight(clickPos, 0xff0000, 'guess-hl-0', 1.05); // 单块：空间红色静态框
+                addStaticHighlight(clickPos, 0xff0000, 'guess-hl-0', 1.05); 
                 triggerVerification();
             } else {
                 if (currentGuessIndex === 0) {
-                    addStaticHighlight(clickPos, 0xff0000, 'guess-hl-0', 1.05); // 绿块猜测：空间红色静态框
+                    addStaticHighlight(clickPos, 0xff0000, 'guess-hl-0', 1.05); 
                     updateInstructionUI();
                 } else if (currentGuessIndex === 1) {
-                    addStaticHighlight(clickPos, 0x00aaff, 'guess-hl-1', 1.05); // 紫块猜测：空间蓝色静态框
+                    addStaticHighlight(clickPos, 0x00aaff, 'guess-hl-1', 1.05); 
                     triggerVerification();
                 }
             }
@@ -727,7 +783,7 @@
 
         function animateLayer(moveDef, duration) {
             return new Promise(resolve => {
-                const groupToMove = cubies.filter(c => Math.round(c.position[moveDef.axis]) === moveDef.layer);
+                const groupToMove = cubies.filter(c => Math.round(c.position[moveDef.axis]) === moveDef.layer && !c.userData.isCenter);
                 pivot.rotation.set(0, 0, 0);
                 pivot.updateMatrixWorld();
                 groupToMove.forEach(c => pivot.attach(c));
@@ -825,12 +881,9 @@
             setTimeout(() => { overlay.style.display = 'none'; }, 300);
         }
 
+        // 彻底修复重组
         function onWindowResize() {
-            const container = document.getElementById('canvas-container');
-            if(container.clientWidth === 0) return;
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            adjustLayoutSize();
         }
 
         function animate(time) {
