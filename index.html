@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Lookahead Challenge - F2L高阶前瞻训练</title>
+    <title>Lookahead Challenge - F2L前瞻训练</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -64,9 +64,11 @@
             👆 滑动寻找发光目标，推演其最终位置
         </p>
 
+        <!-- 画布容器 -->
         <div class="relative w-full max-w-sm sm:max-w-md aspect-square bg-gray-100 rounded-xl shadow-inner border border-gray-200 mt-2 sm:mt-4 overflow-hidden">
             <div id="canvas-container" class="w-full h-full cursor-pointer touch-none"></div>
             
+            <!-- 悬浮结算卡片 -->
             <div id="result-overlay" class="absolute bottom-3 left-1/2 transform -translate-x-1/2 bg-white/95 shadow-2xl border border-gray-200 rounded-xl p-4 z-20 w-[92%] flex-col items-center transition-all duration-300 opacity-0 pointer-events-none scale-95" style="display: none;">
                 <h2 id="result-title" class="text-2xl font-black mb-1 text-center"></h2>
                 <p id="result-desc" class="text-xs text-gray-600 text-center mb-1 font-bold"></p>
@@ -157,9 +159,9 @@
         let cubies = [];
         let pivot;
         
-        let initialStartPositions = []; // 记录复原状态下的坐标身份
-        let currentPreScramble = [];    // 记录每题的打乱公式 (用于重试)
-        let currentSequence = [];       // 需要推演的答题公式
+        let initialStartPositions = []; 
+        let currentPreScramble = [];    
+        let currentSequence = [];       
         let targetCubies = []; 
         let guessedPositions = []; 
         
@@ -233,9 +235,6 @@
             }
         }
 
-        // ==========================================
-        // 精准定义 F2L 数据结构
-        // ==========================================
         const C_HEX = { U: 0xFFD500, D: 0xFFFFFF, F: 0x0055D4, B: 0x00A020, R: 0xD50000, L: 0xFF6600, BLACK: 0x1A1A1A };
         const C_CSS = { U: '#FFD500', D: '#FFFFFF', F: '#0055D4', B: '#00A020', R: '#D50000', L: '#FF6600' };
 
@@ -254,12 +253,11 @@
             "B'": { axis: 'z', layer: -1, angle: -Math.PI/2,bg: 'bg-green-100',  text: 'text-green-700' }
         };
 
-        // 定义四组标准的 F2L 配对关系
         const F2L_PAIRS = [
-            { edge: {x:1, y:0, z:1}, corner: {x:1, y:-1, z:1} },   // 右前 (红蓝)
-            { edge: {x:-1, y:0, z:1}, corner: {x:-1, y:-1, z:1} }, // 左前 (橙蓝)
-            { edge: {x:1, y:0, z:-1}, corner: {x:1, y:-1, z:-1} }, // 右后 (红绿)
-            { edge: {x:-1, y:0, z:-1}, corner: {x:-1, y:-1, z:-1} } // 左后 (橙绿)
+            { edge: {x:1, y:0, z:1}, corner: {x:1, y:-1, z:1} },   
+            { edge: {x:-1, y:0, z:1}, corner: {x:-1, y:-1, z:1} }, 
+            { edge: {x:1, y:0, z:-1}, corner: {x:1, y:-1, z:-1} }, 
+            { edge: {x:-1, y:0, z:-1}, corner: {x:-1, y:-1, z:-1} } 
         ];
 
         function toggleFullScreen() {
@@ -468,9 +466,6 @@
             }
         }
 
-        // ==========================================
-        // 暗中随机打乱引擎 (Pre-Scramble)
-        // ==========================================
         function applyInstantSequence(seq) {
             seq.forEach(moveStr => {
                 const moveDef = MOVES_DICT[moveStr];
@@ -480,11 +475,9 @@
                 pivot.updateMatrixWorld();
                 groupToMove.forEach(c => pivot.attach(c));
 
-                // 瞬间旋转
                 pivot.rotation[moveDef.axis] = moveDef.angle;
                 pivot.updateMatrixWorld();
 
-                // 瞬间解绑贴网格
                 groupToMove.forEach(c => {
                     scene.attach(c);
                     c.position.x = Math.round(c.position.x);
@@ -496,7 +489,6 @@
                 });
             });
         }
-
 
         async function demoMove(moveStr) {
             if (gameState !== 'PLAYING' || isDemoing) return;
@@ -554,9 +546,6 @@
             }
         }
 
-        // ==========================================
-        // 新游戏生成逻辑：结合 F2L 与 Pre-Scramble
-        // ==========================================
         function startNewGame() {
             initialStartPositions = [];
             const randomPair = F2L_PAIRS[Math.floor(Math.random() * F2L_PAIRS.length)];
@@ -572,7 +561,6 @@
             
             const possibleMoves = ["U", "U'", "R", "R'", "F", "F'", "L", "L'", "B", "B'", "D", "D'"];
             
-            // 1. 生成一段较长的暗中打乱公式 (15步)，彻底打乱起始状态
             currentPreScramble = [];
             let lastM = "";
             for(let i=0; i<15; i++) {
@@ -581,7 +569,6 @@
                 lastM = m;
             }
 
-            // 2. 生成要求玩家推演的公式 (只使用常用的 U R F L 等层，降低一点非标准面的地狱难度)
             const testMoves = ["U", "U'", "R", "R'", "F", "F'", "L", "L'"];
             currentSequence = [];
             let lastTest = "";
@@ -596,19 +583,22 @@
 
         function retryGame() { setupPuzzleState(); }
 
+        // ==========================================
+        // 【核心修改2】增加静态高亮的清理
+        // ==========================================
         function setupPuzzleState() {
             gameState = 'PLAYING';
             guessedPositions = []; 
             hideResultCard();
             updateInstructionUI();
             
-            // 1. 生成并涂色 (此时块都在复原位置)
+            // 每次重新开始，强力清理之前的静态红蓝预测框
+            removeStaticHighlight('guess-hl-0');
+            removeStaticHighlight('guess-hl-1');
+
             createCube(initialStartPositions);
-            
-            // 2. 瞬间执行打乱引擎，把有颜色的块随机散落
             applyInstantSequence(currentPreScramble);
 
-            // 3. 重置视角
             controls.reset();
             camera.position.set(4.5, 3.8, 5.5);
             
@@ -666,19 +656,50 @@
             }
         }
 
+        // ==========================================
+        // 【核心修改1】新增：静态世界空间高亮框函数
+        // 保证红框和蓝框死死钉在空间原处，绝不随层转走
+        // ==========================================
+        function addStaticHighlight(pos, hexColor, name, scale = 1.05) {
+            removeStaticHighlight(name); // 清理旧的
+            
+            const geometry = new THREE.BoxGeometry(scale, scale, scale);
+            const edges = new THREE.EdgesGeometry(geometry);
+            const material = new THREE.LineBasicMaterial({ color: hexColor, linewidth: 3 });
+            const line = new THREE.LineSegments(edges, material);
+            line.name = name;
+            
+            // 关键：将位置直接拷贝给它，并贴合到整数网格上
+            line.position.copy(pos).round();
+            
+            // 直接添加到 scene（世界空间）中，而不作为 cubie 的子元素！
+            scene.add(line);
+        }
+
+        function removeStaticHighlight(name) {
+            const existing = scene.getObjectByName(name);
+            if (existing) {
+                scene.remove(existing);
+                if (existing.geometry) existing.geometry.dispose();
+                if (existing.material) existing.material.dispose();
+            }
+        }
+
+        // 修改点击响应，改用全新的 addStaticHighlight
         function handlePieceClick(clickedCubie) {
             const currentGuessIndex = guessedPositions.length;
-            guessedPositions.push(new THREE.Vector3().copy(clickedCubie.position).round());
+            const clickPos = new THREE.Vector3().copy(clickedCubie.position).round();
+            guessedPositions.push(clickPos);
 
             if (gameMode !== 'both') {
-                addHighlight(clickedCubie, 0xff0000, 'guess-hl-0', 1.05);
+                addStaticHighlight(clickPos, 0xff0000, 'guess-hl-0', 1.05); // 单块：空间红色静态框
                 triggerVerification();
             } else {
                 if (currentGuessIndex === 0) {
-                    addHighlight(clickedCubie, 0xff0000, 'guess-hl-0', 1.05); 
+                    addStaticHighlight(clickPos, 0xff0000, 'guess-hl-0', 1.05); // 绿块猜测：空间红色静态框
                     updateInstructionUI();
                 } else if (currentGuessIndex === 1) {
-                    addHighlight(clickedCubie, 0x00aaff, 'guess-hl-1', 1.05); 
+                    addStaticHighlight(clickPos, 0x00aaff, 'guess-hl-1', 1.05); // 紫块猜测：空间蓝色静态框
                     triggerVerification();
                 }
             }
